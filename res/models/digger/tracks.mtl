@@ -1,0 +1,22 @@
+# Blender 3.3.1 MTL File: 'None'
+# www.blender.org
+
+newmtl Material.001
+Ns 1000.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd DIGGER-COLOR.png
+map_Ke DIGGER-EMIT.png
+
+newmtl Material.002
+Ns 1000.000000
+Ka 0.355731 0.355731 0.355731
+Ks 0.818182 0.818182 0.818182
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 0.500000
+illum 6
+map_Kd DIGGER-COLOR.png
