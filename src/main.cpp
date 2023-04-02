@@ -28,10 +28,6 @@
 #include <GLFW/glfw3.h> // Include glfw3.h after our OpenGL definitions
 #include <spdlog/spdlog.h>
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-void mouse_callback(GLFWwindow* window, double xPos, double yPos);
-void scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
-void process_input(GLFWwindow* window, int key, int scancode, int action, int mods);
 GLuint loadCubemapTexture(std::vector<std::string> faces);
 
 static void glfw_error_callback(int err, const char* description)
@@ -43,7 +39,7 @@ constexpr int WINDOW_WIDTH = 1600;
 constexpr int WINDOW_HEIGHT = 900;
 
 // Camera setup
-Camera cam(glm::vec3(0.0f, 30.0f, 25.0f));
+Camera cam(glm::vec3(0.0f, 30.0f, 25.0f), WINDOW_WIDTH, WINDOW_HEIGHT);
 float camX = WINDOW_WIDTH * 0.5;
 float camY = WINDOW_HEIGHT * 0.5;
 float lastX = static_cast<float>(WINDOW_WIDTH) / 2.0;
@@ -61,7 +57,7 @@ float lastFrame = 0.0f;
 // Excavator setup
 static float excavatorRotation = 0.0f;
 static float cabinRotation = 0.0f;
-static glm::vec3 modelPos = glm::vec3(0.0f, 25.0f, 0.0f);
+static glm::vec3 modelPos = glm::vec3(0.0f, 5.0f, -15.0f);
 
 int main(int, char**)
 {
@@ -90,10 +86,6 @@ int main(int, char**)
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Programowanie animacji", nullptr, nullptr);
     if (window == nullptr) return 1;
     glfwMakeContextCurrent(window);
-    glfwSetKeyCallback(window, process_input);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
     glfwSwapInterval(1);
 
     // Initialize OpenGL loader
@@ -202,7 +194,8 @@ int main(int, char**)
     shaderSkybox.setInt("skybox", 0);
 
     // load models
-    Model loadedModel("res/models/sword.obj");
+    //Model loadedModel("res/models/sword.obj");
+    Model loadedModel("res/models/char/Walking.dae");
 
     // Scene root object (SceneGraph Node)
     Node root(&loadedModel);
@@ -214,21 +207,21 @@ int main(int, char**)
 
     // Lights
     DirectionalLight directionalLight(
-        glm::vec3(-0.2f, -1.0f, -0.3f),
-        glm::vec3(0.1f, 0.1f, 0.1f),
-        glm::vec3(0.8f, 0.8f, 0.8f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 0.0f));
 
     LightPosition dirPosition;
     Node dirLightPosition(&dirPosition);
     root.addChild(&dirLightPosition);
 
-    // Excavator
+    // Model
     Node mainModel(&loadedModel);
     root.addChild(&mainModel);
 
     glm::mat4 mainModelTransform = glm::mat4(1.0f);
-    mainModelTransform = scale(mainModelTransform, glm::vec3(0.5f));
+    mainModelTransform = scale(mainModelTransform, glm::vec3(1.0f));
     mainModelTransform = translate(mainModelTransform, modelPos);
     mainModel.setTransform(mainModelTransform);
 
@@ -261,6 +254,11 @@ int main(int, char**)
 
             ImGui::Separator();
 
+            ImGui::Text("[ESC] Enable cursor.");
+            ImGui::Text("[TAB] Get back to viewport.");
+
+            ImGui::Separator();
+
             ImGui::Text("Directional light");
             ImGui::Checkbox("DL_Enabled", &enableDirectional);
             ImGui::ColorEdit4("DL_Ambient", reinterpret_cast<float*>(&directionalLight.ambient));
@@ -286,6 +284,8 @@ int main(int, char**)
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        cam.Inputs(window);
+
         // Setting lit shader uniforms
         shaderInstance.use();
         {
@@ -305,7 +305,7 @@ int main(int, char**)
         }
 
         // view/projection transform
-        glm::mat4 projection = glm::perspective(glm::radians(cam.zoom), static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f, 500.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(cam.zoom), static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f, 2000.0f);
         glm::mat4 view = cam.getViewMatrix();
         shaderInstance.setMat4("projection", projection);
         shaderInstance.setMat4("view", view);
@@ -334,10 +334,7 @@ int main(int, char**)
             shaderLit.setMat4("model", model);
         }
 
-        // Camera speed
-        cam.speed = 20.0f; // When in drive mode, camera follows the excavator and does not move on its own
-
-        // Excavator
+        // Model
         glm::mat4 newModelTransform = scale(newModelTransform, glm::vec3(0.5f));
         newModelTransform = translate(mainModelTransform, modelPos);
         newModelTransform = glm::rotate(newModelTransform, glm::radians(excavatorRotation), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -395,47 +392,6 @@ int main(int, char**)
     glfwTerminate();
 
     return 0;
-}
-
-void process_input(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    ;   
-}
-
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-    isMouseButtonPressed =
-        button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS;
-}
-
-void mouse_callback(GLFWwindow* window, double xPosIn, double yPosIn)
-{
-    if (isMouseButtonPressed)
-    {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        const float xPos = static_cast<float>(xPosIn);
-        const float yPos = static_cast<float>(yPosIn);
-
-        if (firstMouse)
-        {
-            lastX = xPos;
-            lastY = yPos;
-            firstMouse = false;
-        }
-
-        const float xOffset = xPos - lastX;
-        const float yOffset = lastY - yPos;
-        lastX = xPos;
-        lastY = yPos;
-
-        cam.processMouse(xOffset, yOffset);
-    }
-    else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-}
-
-void scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
-{
-    cam.processScroll(static_cast<float>(yOffset));
 }
 
 GLuint loadCubemapTexture(std::vector<std::string> faces)
