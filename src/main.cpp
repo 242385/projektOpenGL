@@ -339,7 +339,6 @@ int main(int, char**)
         newModelTransform = translate(mainModelTransform, modelPos);
         newModelTransform = glm::rotate(newModelTransform, glm::radians(excavatorRotation), glm::vec3(0.0f, 1.0f, 0.0f));
         mainModel.setTransform(newModelTransform);
-
         mainModel.getNewWorld(model, true);
 
         glActiveTexture(GL_TEXTURE9);
